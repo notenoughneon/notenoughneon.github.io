@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Here is a line break.
+Here is   ... - Test Site
+    </title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/blog.css">
+    <link rel="authorization_endpoint" href="http://localhost:8000/api/auth">
+    <link rel="token_endpoint" href="http://localhost:8000/api/token">
+    <link rel="micropub" href="http://localhost:8000/api/micropub">
+    <link rel="webmention" href="http://localhost:8000/api/webmention">
+  </head>
+  <body>
+    <div role="navigation" class="navbar navbar-default">
+      <div class="container"><a href="/" class="navbar-brand">Test Site</a>
+        <div class="navbar-header">
+          <button type="button" data-toggle="collapse" data-target=".navbar-collapse" class="navbar-toggle"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/">Articles+Notes</a></li>
+            <li><a href="/replies">Replies</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-8 blog-main">
+          <div class="h-entry">
+            <div class="blog-post-larger">
+              <p class="blog-post-meta"><a href="http://localhost:8000" class="p-author h-card"><img src="http://localhost:8000/author.png">Test User</a> - <a href="http://localhost:8000/2016/5/10/14" class="u-url">
+                  <time datetime="2016-05-10T20:42:33.729Z" title="10 May 2016 13:42" class="dt-published">10 May 2016 13:42</time></a>
+              </p>
+              <div class="e-content p-name"><div class="note-content">Here is a line break.
+Here is    extra whitespace.
+    This line begins with whitespace.</div></div>
+              <div class="blog-post-bottom"><span class="blog-post-actions">&nbsp;</span><span class="blog-post-syndication"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-3 col-sm-offset-1 blog-sidebar">
+          <div class="sidebar-module sidebar-module-inset">
+            <h4>About</h4>
+            <div class="h-card"><img src="/author.png" class="u-photo"><a rel="me" href="http://localhost:8000" class="p-name u-url">Test User</a>
+              <p class="p-note">Here is a bio</p>
+            </div>
+          </div>
+          <div class="sidebar-module">
+            <h4>Elsewhere</h4>
+            <ol class="list-unstyled">
+              <li><a href="https://twitter.com/testuser" rel="me">Twitter</a></li>
+              <li><a href="https://instagram.com/testuser" rel="me">Instagram</a></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer"></div>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/blog.js"></script>
+  </body>
+</html>
