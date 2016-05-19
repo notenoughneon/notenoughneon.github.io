@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Typescript async/await with Node - Not Enough Neon
+    </title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/blog.css">
+    <link rel="authorization_endpoint" href="https://api.notenoughneon.com/api/auth">
+    <link rel="token_endpoint" href="https://api.notenoughneon.com/api/token">
+    <link rel="micropub" href="https://api.notenoughneon.com/api/micropub">
+    <link rel="webmention" href="https://api.notenoughneon.com/api/webmention">
+  </head>
+  <body>
+    <div role="navigation" class="navbar navbar-default">
+      <div class="container"><a href="/" class="navbar-brand">Not Enough Neon</a>
+        <div class="navbar-header">
+          <button type="button" data-toggle="collapse" data-target=".navbar-collapse" class="navbar-toggle"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/">Articles+Notes</a></li>
+            <li><a href="/replies">Replies</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-8 blog-main">
+          <div class="h-entry">
+            <div class="blog-post-larger">
+              <h2 class="blog-post-title p-name">Typescript async/await with Node</h2>
+              <p class="blog-post-meta"><a href="http://notenoughneon.com" class="p-author h-card"><img src="http://notenoughneon.com/m/emma-2016-128.jpg">Emma Kuo</a> - <a href="http://notenoughneon.com/2016/3/25/typescript-async-await-with-node" class="u-url">
+                  <time datetime="2016-03-25T22:44:39.151Z" title="25 Mar 2016 15:44" class="dt-published">25 Mar 2016 15:44</time></a>
+              </p>
+              <div class="e-content"><p class="p-summary">
+Typescript 1.7 <a href="https://blogs.msdn.microsoft.com/typescript/2015/11/03/what-about-asyncawait/">added async/await</a>, which is going to be a game changer for node usability. To demonstrate how well it works, I picked out a few examples from a project I've been working on. To add more context to these: I started out writing this project with callbacks, later switched to promises, and then added typescript.
+</p>
+
+<h3>A simple function</h3>
+
+<p>This is a function to walk a directory tree and return a list of files. It includes calls to the node functions <code>stat</code> and <code>readdir</code>, which I've promisified using <a href="https://github.com/cujojs/when">when.js</a>. Although an improvement over callbacks, the promises still suffer from poor readability.
+
+<pre>
+var stat = nodefn.lift(fs.stat);
+var readdir = nodefn.lift(fs.readdir);
+
+export function walkDir(d) {
+    return stat(d).
+        then(function(stats) {
+            if (stats.isDirectory())
+                return readdir(d).
+                    then(function (files) {
+                        return when.map(files, function (file) {
+                            return walkDir(path.join(d, file));
+                        }).
+                            then(flatten);
+                    });
+            else
+                return [d];
+        });
+}
+</pre>
+
+</p><p>Here is the async/await version written in a more readable imperative style. 
+
+<pre>
+export async function walkDir(d) {
+    var stats = await stat(d);
+    if (stats.isDirectory()) {
+        var files = [];
+        for (let file of await readdir(d)) {
+            files = files.concat(await walkDir(path.join(d, file)));
+        }
+        return files;
+    } else {
+        return [d];
+    }
+}
+</pre>
+
+</p><p>One important point is that async/await and native ES6 promises remain interoperable with other A+ implementations. So you can promisify node calls using <a href="http://bluebirdjs.com/">Bluebird</a> or something similar and they become awaitable. Its easy to refactor promise based code by following a few simple rules:
+
+<ul>
+    <li>Anything returning a promise is <code>await</code>-able.
+    </li><li>Any function using <code>await</code> must be <code>async</code>.
+    </li><li>All <code>async</code> functions return a promise.
+</li></ul>
+
+</p><h3>Loops</h3>
+
+<p>The next example demonstrates something promises have difficulty with: async inside a loop of unbounded size. This function finds a unique slug for a new blog post by appending an incrementing ID. After a lot of effort, this was solved this by creating an inner recursive function.
+
+<pre>
+getNextAvailable(n, prefix) {
+    var that = this;
+    function chain() {
+        return that.publisher.exists(prefix + n).
+            then(function (exists) {
+                if (exists) {
+                    n++;
+                    return chain();
+                } else {
+                    return prefix + n;
+                }
+            })
+    }
+    return chain();
+}
+</pre>
+
+</p><p>Anyone who hasn't struggled with this problem would probably be confused by that mess. This is where async/await really excels:
+
+<pre>
+async getNextAvailable(n, prefix) {
+    while (await this.publisher.exists(prefix + n)) {
+        n++;
+    }
+    return prefix + n;
+}
+</pre>
+
+</p><h3>Concurrency</h3>
+
+<p>Finally, one last example. This function has four async calls, but already the readability is getting out of hand.
+
+<pre>
+reIndex() {
+    return this.publisher.list().
+        then(keys => {
+            return when.map(keys, key => {
+                var u = url.resolve(this.config.url, key);
+                return this.publisher.get(key).
+                    then(obj => {
+                        if (obj.ContentType == 'text/html')
+                            return microformat.getHEntryWithCard(obj.Body, u).
+                                then(entry => {
+                                    if (entry != null && (entry.url === u || entry.url + '.html' === u))
+                                        return this.db.storeTree(entry).
+                                            then(() => debug('indexed ' + entry.url));
+                                });
+                    });
+            });
+        }).
+        then(() => debug('done reindexing'));
+}
+</pre>
+
+</p><p>That looks terrible, but take a look at the async version. Its probably not hard to figure out what this does now.
+
+<pre>
+async reIndex() {
+    var keys = await this.publisher.list();
+    for (var key of keys) {
+        var u = url.resolve(this.config.url, key);
+        var obj = await this.publisher.get(key);
+        if (obj.ContentType == 'text/html') {
+            var entry = await microformat.getHEntryWithCard(obj.Body, u);
+            if (entry != null && (entry.url === u || entry.url + '.html' === u)) {
+                await this.db.storeTree(entry);
+                debug('indexed ' + entry.url);
+            }
+        }
+    }
+    debug('done reindexing');
+}
+</pre>
+
+</p><p>What if publisher.get() has 20ms of latency and there are 1000 objects? In this scenario, the for loop could be orders of magnitude slower since its fetching objects serially. To get concurrent behavior, we can await when.map, and continue using async/await in the lambda passed to it:
+
+<pre>
+async reIndex() {
+    var keys = await this.publisher.list();
+    await when.map(keys, async (key) => {
+        var u = url.resolve(this.config.url, key);
+        var obj = await this.publisher.get(key);
+        if (obj.ContentType == 'text/html') {
+            var entry = await microformat.getHEntryWithCard(obj.Body, u);
+            if (entry != null && (entry.url === u || entry.url + '.html' === u)) {
+                await this.db.storeTree(entry);
+                debug('indexed ' + entry.url);
+            }
+        }
+    });
+    debug('done reindexing');
+}
+</pre>
+
+</p><p>A couple things to note:
+<ul>
+    <li>You can mark arrow functions <code>async</code> too.
+    </li><li>An arrow function is preferable here, so <code>this</code> doesn't need to be captured in a closure.
+</li></ul>
+</p></div>
+              <div class="blog-post-bottom"><span class="blog-post-actions">&nbsp;</span><span class="blog-post-syndication"><span>#<a href="/tags/code" class="p-category">code</a></span><span>#<a href="/tags/typescript" class="p-category">typescript</a></span></span></div>
+            </div>
+                      <div class="h-cite"><a href="https://kylewm.com/2016/05/like-coroutines-are-just-categorically-better" class="u-in-reply-to"></a>
+                        <div class="blog-post">
+                          <p class="blog-post-meta"><a href="http://notenoughneon.com" class="p-author h-card"><img src="http://notenoughneon.com/m/emma-2016-128.jpg">Emma Kuo</a> - <a href="http://notenoughneon.com/2016/5/3/2" class="u-url">
+                              <time datetime="2016-05-03T20:18:23.686Z" title="3 May 2016 13:18" class="dt-published">3 May 2016 13:18</time></a>
+                          </p>
+                          <div class="e-content p-name">Have you checked out typescript? I posted some thoughts on how it alleviates callback hell: http://notenoughneon.com/2016/3/25/typescript-async-await-with-node
+                          </div>
+                          <div class="blog-post-bottom"><span class="blog-post-actions">&nbsp;</span><span class="blog-post-syndication"></span></div>
+                        </div>
+                      </div>
+          </div>
+        </div>
+        <div class="col-sm-3 col-sm-offset-1 blog-sidebar">
+          <div class="sidebar-module sidebar-module-inset">
+            <h4>About</h4>
+            <div class="h-card"><img src="/m/emma-2016-128.jpg" class="u-photo"><a rel="me" href="http://notenoughneon.com" class="p-name u-url">Emma Kuo</a>
+              <p class="p-note">Software development, music production. .NET · Node · Akai MPC · vinyl</p>
+            </div>
+          </div>
+          <div class="sidebar-module">
+            <h4>Elsewhere</h4>
+            <ol class="list-unstyled">
+              <li><a href="https://twitter.com/notenoughneon" rel="me">Twitter</a></li>
+              <li><a href="http://instagram.com/emmackuo" rel="me">Instagram</a></li>
+              <li><a href="https://soundcloud.com/notenoughneon" rel="me">SoundCloud</a></li>
+              <li><a href="https://github.com/notenoughneon" rel="me">Github</a></li>
+              <li><a href="http://www.linkedin.com/pub/emma-kuo/25/15a/586" rel="me">LinkedIn</a></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer"></div>
+    <script src="https://code.jquery.com/jquery-1.12.3.min.js" integrity="sha256-aaODHAgvwQW1bFOGXMeX+pC4PZIPsvn2h1sArYOhgXQ=" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    <script src="/js/blog.js"></script>
+  </body>
+</html>
