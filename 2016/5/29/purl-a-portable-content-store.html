@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PURL: A Portable Content Store - Not Enough Neon
+    </title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/blog.css">
+    <link rel="authorization_endpoint" href="https://api.notenoughneon.com/api/auth">
+    <link rel="token_endpoint" href="https://api.notenoughneon.com/api/token">
+    <link rel="micropub" href="https://api.notenoughneon.com/api/micropub">
+    <link rel="webmention" href="https://api.notenoughneon.com/api/webmention">
+  </head>
+  <body>
+    <div role="navigation" class="navbar navbar-default">
+      <div class="container"><a href="/" class="navbar-brand">Not Enough Neon</a>
+        <div class="navbar-header">
+          <button type="button" data-toggle="collapse" data-target=".navbar-collapse" class="navbar-toggle"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/">Articles+Notes</a></li>
+            <li><a href="/replies">Replies</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-8 blog-main">
+          <div class="h-entry">
+            <div class="blog-post-larger">
+              <h2 class="blog-post-title p-name">PURL: A Portable Content Store</h2>
+              <p class="blog-post-meta"><a href="http://notenoughneon.com" class="p-author h-card"><img src="http://notenoughneon.com/m/emma-2016-128.jpg">Emma Kuo</a> - <a href="http://notenoughneon.com/2016/5/29/purl-a-portable-content-store" class="u-url">
+                  <time datetime="2016-05-29T20:31:18.117Z" title="29 May 2016 13:31" class="dt-published">29 May 2016 13:31</time></a>
+              </p>
+              <div class="e-content"><p class="p-summary">A challenge of building for the <a href="https://adactio.com/articles/1522/">long web</a> is optimizing systems for ease of maintenance, inspectability and portability. Databases provide a convenient API for manipulating structured data. They make it easier to write featureful applications, but fail at the three above concerns.</p>
+
+<p>Flat file storage schemes improve maintainability and inspectability. They are a way to avoid the <a href="http://indiewebcamp.com/database-antipattern">database tax</a>, but suffer from lack of portability due to differing formats.</p>
+
+<p>Rather than create separate flat files in markdown or JSON, we can use the published HTML + microformats as its own content store.</p>
+
+<img clas="u-photo" src="http://notenoughneon.com/2016/5/29/purl.svg" width="100%" />
+
+<p>First we need an MF2 parser to read semantic objects from the web. This is already being used today to read webmentions. Then we close the loop by rendering the same objects back to HTML, to create a read-write system.</p>
+
+<p>I call this PURL: the <em>parse-update-render-loop</em>. With PURL, your published HTML becomes the content store. You use the same code to access the whole web: both your content (read-write), and everyone else's (read-only).</p>
+
+<p>Since it's just HTML, your data can be versioned in source control, backed up in the cloud, and copied to a flash drive. Unlike non-HMTL flat files, you can read it offline in a browser.</p>
+
+<p>Another benefit is that microformat correctness is enforced by validation checks (more on this below). You can be more confident that your microformats are compatible with reader apps.</p>
+
+<p>But the killer feature is that it's trivial to import your indieweb site into a PURL system by copying the HTML.</p>
+
+<p>Let's look at how PURL works when updating a post. First we parse a document to an object model. The raw output of MF2 parsers is inconvenient to work with, so an object model or helper library can make this easier. Next we update the model. Maybe we received a webmention, so we add it to the comments. Then we render the object back to HTML using templates.</p>
+
+<p>To publish new content we can skip the parsing stage and jump directly to creating a new object, then render it to HTML.</p>
+
+<p>The site theme is separate from the semantic content, but during rendering it's all baked in to one file. Parsing separates the content from styling again. To update the styling, we can just change the templates, then refresh the system without applying updates to the content.</p>
+
+<p>What happens if you update the site templates but introduce errors in the MF2? We can add a validate function that acts as a safeguard. To validate, instead of publishing the content, we parse it a second time and make sure the original and regenerated objects are identical. It's like having a regression test, but without the effort of creating a test suite.</p>
+
+<p>Importing data into PURL is as trivial as copying the HTML and refreshing the system (similar to updating the template).</p>
+
+<p>I've implemented PURL in two indieweb projects. Both of these hosted my blog over the past two years, and migrating from one to the other was very easy.</p>
+
+<p><a href="https://github.com/notenoughneon/neonblog">Neonblog</a> was written in PHP and designed for a shared hosting environment. It's using the <a href="https://github.com/indieweb/php-mf2">php-mf2</a> parser and PHP as the template mechanism. I created an <a href="https://github.com/notenoughneon/neonblog/blob/master/lib/microformat.php">object model</a> to simplify the logic. Post permalinks are stored as static content served by Apache.</p>
+
+<p><a href="https://github.com/notenoughneon/skein">Skein</a> was written in node.js and designed for hosting on AWS S3. I wanted to try out cloud technologies and learn node.js, so I switched over to Skein a year ago. It uses the <a href="https://github.com/glennjones/microformat-node">microformat-node</a> parser and jade templates. I created a new object model, <a href="https://github.com/notenoughneon/mf-obj">mf-obj</a>, based on the previous work with Neonblog.</p>
+
+<p>In a future post, I'll go into more detail about Skein and mf-obj.</p></div>
+              <div class="blog-post-bottom"><span class="blog-post-actions">&nbsp;</span><span class="blog-post-syndication"><span>#<a href="/tags/indieweb" class="p-category">indieweb</a></span><span><a href="http://news.indiewebcamp.com/en" class="u-syndication"><i class="fa fa-external-link"></i></a></span></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-3 col-sm-offset-1 blog-sidebar">
+          <div class="sidebar-module sidebar-module-inset">
+            <h4>About</h4>
+            <div class="h-card"><img src="/m/emma-2016-128.jpg" class="u-photo"><a rel="me" href="http://notenoughneon.com" class="p-name u-url">Emma Kuo</a>
+              <p class="p-note">Software development, music production. .NET · Node · Akai MPC · vinyl</p>
+            </div>
+          </div>
+          <div class="sidebar-module">
+            <h4>Elsewhere</h4>
+            <ol class="list-unstyled">
+              <li><a href="https://twitter.com/notenoughneon" rel="me">Twitter</a></li>
+              <li><a href="http://instagram.com/emmackuo" rel="me">Instagram</a></li>
+              <li><a href="https://soundcloud.com/notenoughneon" rel="me">SoundCloud</a></li>
+              <li><a href="https://github.com/notenoughneon" rel="me">Github</a></li>
+              <li><a href="http://www.linkedin.com/pub/emma-kuo/25/15a/586" rel="me">LinkedIn</a></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer"></div>
+    <script src="https://code.jquery.com/jquery-1.12.3.min.js" integrity="sha256-aaODHAgvwQW1bFOGXMeX+pC4PZIPsvn2h1sArYOhgXQ=" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    <script src="/js/blog.js"></script>
+  </body>
+</html>
