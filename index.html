@@ -39,56 +39,7 @@
                 <p class="blog-post-meta"><a href="http://notenoughneon.com/2016/6/13/building-a-dsl-for-the-indieweb" class="u-url">
                     <time datetime="2016-06-13T22:43:16.016Z" title="13 Jun 2016 15:43" class="dt-published">13 Jun 2016 15:43</time></a>
                 </p>
-                <div class="e-content"><p class=""><a href="https://github.com/notenoughneon/mf-obj">mf-obj</a> is a library I created while writing <a href="https://github.com/notenoughneon/skein">skein</a>. I'm also using it in <a href="https://github.com/notenoughneon/thready">thready</a>. It's an object oriented abstraction on top of the MF2 parser that understands things like posts and authors. Some of the functions it provides are: parsing comments and reply contexts, implementing the <a href="http://indiewebcamp.com/authorship">authorship algorithm</a>, and determining <a href="http://indiewebcamp.com/post_type#Kinds_of_Posts">post types</a>.</p><p class="">A cool trick I discovered is that I can use the node REPL to create an admin console by leveraging terse mf-obj expressions. Instead of designing a whole UI, this took just&nbsp;<a href="https://github.com/notenoughneon/skein/commit/c616915c6d054831c750956b946d3eb37e2295e9">1 line of code</a>. Below are some example use cases.</p><p class="">The getAll() method returns an array of all the posts on my blog.</p><p>          </p><pre>&gt; var entries = site.getAll();</pre><p class="">Here's what one of these posts looks like:</p><pre><p>&gt; entries[]
-Entry {
- name: 'But at least you own your jokes now!',
- published: Wed Oct 15 2014 12:43:37 GMT-0700 (PDT),
- content: 
-   { value: 'But at least you own your jokes now!',
-     html: 'But at least you own your jokes now!' },
- summary: <b>null</b>,
- url: 'http://notenoughneon.com/2014/10/15/1',
- author: 
-   Card {
-     name: 'Emma Kuo',
-     photo: 'http://notenoughneon.com/m/emma-tw-73.jpeg',
-     url: 'http://notenoughneon.com',
-     uid: <b>null</b> },
- category: [],
- syndication: [],
- syndicateTo: [],
- replyTo: 
-   Entry {
-     name: 'Surprisingly neither having my own website, nor POSSE have elevated the quality of my content above dumb jokes',
-     published: Wed Oct 15 2014 11:50:43 GMT-0700 (PDT),
-     content: 
-       { value: 'Surprisingly neither having my own website, nor POSSE have elevated the quality of my content above dumb jokes',
-         html: 'Surprisingly neither having my own website, nor POSSE have elevated the quality of my content above dumb jokes\n ' },
-     summary: <b>null</b>,
-     url: 'https://kylewm.com/note/2014/10/15/1/surprisingly-neither-having-my-own',
-     author: 
-       Card {
-         name: 'Kyle Mahan',
-         photo: 'https://kylewm.com/static/img/users/kyle.jpg',
-         url: 'https://kylewm.com',
-         uid: <b>null</b> },
-     category: [],
-     syndication: [ 'https://twitter.com/kyle_wm/status/522459586221993985' ],
-     syndicateTo: [],
-     replyTo: <b>null</b>,
-     likeOf: <b>null</b>,
-     repostOf: <b>null</b>,
-     embed: <b>null</b>,
-     children: Map {} },
- likeOf: <b>null</b>,
- repostOf: <b>null</b>,
- embed: <b>null</b>,
- children: Map {} }</p></pre><p class="">I can get statistics such as post count:</p><p>          </p><pre>&gt; entries.length<br />112</pre><p class="">Using filter(), I can count just the articles:</p><p>          </p><pre>&gt; entries.filter(e =&gt; e.isArticle()).length<br />4</pre><p class="">Or replies:</p><p>          </p><pre>&gt; entries.filter(e =&gt; e.isReply()).length<br />18</pre><p class="">Using map(), I can list just the URL of the replies:</p><p>          </p><pre>&gt; entries.filter(e =&gt; e.isReply()).map(e =&gt; e.url)<br />[ 'http://notenoughneon.com/2014/10/15/1',<br />  'http://notenoughneon.com/2014/11/15/1',<br />  'http://notenoughneon.com/2014/11/16/1',<br />  'http://notenoughneon.com/2014/7/27/1',<br />  'http://notenoughneon.com/2014/8/28/1',
-  ...</pre><p class="">Here's a more complex query. This is the URLs and reply count, sorted by descending reply count:</p><p>          </p><pre>&gt; entries.map(e =&gt; [e.getChildren().length, e.url]).sort((a,b) =&gt; b[] - a[])<br />[ [ 14, 'http://notenoughneon.com/2016/6/7/2' ],<br />  [ 11, 'http://notenoughneon.com/2016/6/4/1' ],<br />  [ 11, 'http://notenoughneon.com/2016/5/29/purl-a-portable-content-store' ],<br />  [ 9, 'http://notenoughneon.com/2015/1/16/1' ],<br />  [ 8, 'http://notenoughneon.com/2015/5/15/1' ],
-  ...</pre><p class="">I can also search using regex, then list the names of those posts:</p><p>          </p><pre>&gt; entries.filter(e =&gt; e.name.match(/indieweb/)).map(e =&gt; e.name)<br />[ 'Got an #indieweb feed reader running: http://notenoughneon.com/feed.php Its still pretty buggy.',<br />  'Adding neonblog documentation on indiewebcamp.com',<br />  'I have published mf-obj, a set of utility classes for working with #indieweb posts: https://www.npmjs.com/package/mf-obj',<br />  'I\'m demoing skein at #indieweb summit 2016!',<br />  'Forgot to mention my #indieweb site is powered by skein. It\'s open source: https://github.com/notenoughneon/skein',
-  ...</pre><p class="">This style of programming should look familiar if you've used jQuery or LINQ. But the admin console isn't just for querying. I can also update posts. Suppose there is a post that needs the "indieweb" tag added:</p><p>          </p><pre>&gt; var entry = site.get('http://notenoughneon.com/2014/7/26/1');
-&gt; entry.category.push('indieweb');
-&gt; site.update(entry);</pre><p class="">This is still a work in progress, and the last example would be better if it could be expressed as a one-liner. But this demonstrates a principle I call "building for hackability." In the early stages of a project, you need to rapidly prototype and can't afford full fledged UIs. Having a good foundation that lends itself to DSLs will open up the opportunity for quick REPL based interfaces.</p></div>
+                <div class="p-summary">mf-obj is a library I created while writing skein. I'm also using it in thready. It's an object oriented abstraction on top of the MF2 parser that understands things like posts and authors. Some of the functions it provides are: parsing comments and reply contexts, implementing the authorship algorithm, and determining post types.</div><a href="http://notenoughneon.com/2016/6/13/building-a-dsl-for-the-indieweb">More...</a>
                 <div class="blog-post-bottom"><span class="blog-post-actions">&nbsp;</span><span class="blog-post-syndication"></span></div>
               </div>
             </div>
