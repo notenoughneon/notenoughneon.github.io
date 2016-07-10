@@ -37,6 +37,26 @@
           <div class="h-feed"><a href="/" class="u-author"></a>
             <div class="h-entry">
               <div class="blog-post">
+                <h2 class="blog-post-title p-name"><a href="http://notenoughneon.com/2014/10/26/mpc2000xl-midi-crash-fixed">MPC2000XL MIDI crash - FIXED</a></h2>
+                <p class="blog-post-meta"><a href="http://notenoughneon.com/2014/10/26/mpc2000xl-midi-crash-fixed" class="u-url">
+                    <time datetime="2014-10-26T07:10:09.000Z" title="26 Oct 2014 0:10" class="dt-published">26 Oct 2014 0:10</time></a>
+                </p>
+                <div class="e-content"><p><em>Background: I have an MPC2000XL with defective MIDI OUT ports that cause the OS to crash. I tried all the standard troubleshooting, but was faced with the prospect of replacing the motherboard.</em>
+
+</p><p>Instead, I was able to fix it by replacing a 50 cent chip that turned out to be the culprit. If your MPC has the same problem and you're comfortable soldering surface mount components, this could save you the expense of a new motherboard.
+
+</p><p>The crash only happens when sending MIDI data while the port is under load, so I figured the gates on IC78 are faulty and can no longer sink enough current to drive the MIDI current loop. The other gates on this chip control an interrupt line from the UART to the microcontroller, so its plausible MIDI OUT load is pulling these gates high and strobing the OS's interrupt handler.
+
+</p><p>The original chip is a Hitachi 74HC32 which is no longer available, but any 74HC32 in 14-SO "wide" format should work. The one I used was a Texas Instruments SN74HC32NSR.
+
+</p><p>
+<img src="http://notenoughneon.com/2014/10/26/badmidi.png" /><img src="http://notenoughneon.com/2014/10/26/IMG_0520.JPG" /></p></div>
+                <div class="blog-post-bottom"><span class="blog-post-actions">&nbsp;</span><span class="blog-post-syndication"><span><a href="https://twitter.com/notenoughneon/status/526471043095859201" class="u-syndication"><i class="fa fa-twitter"></i></a></span><span><a href="https://facebook.com/100004445894506_381182178706642" class="u-syndication"><i class="fa fa-facebook"></i></a></span></span></div>
+              </div>
+            </div>
+            <div class="blog-post-spacer"></div>
+            <div class="h-entry">
+              <div class="blog-post">
                 <p class="blog-post-meta"><a href="http://notenoughneon.com/2014/10/25/1" class="u-url">
                     <time datetime="2014-10-25T19:14:35.000Z" title="25 Oct 2014 12:14" class="dt-published">25 Oct 2014 12:14</time></a>
                 </p>
